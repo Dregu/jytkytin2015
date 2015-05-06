@@ -102,17 +102,43 @@ defaultTrack = {
   }
 };
 
+function pad(n, width, z) {
+  z = z || '0';
+  n = n + '';
+  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+}
+
 drum.service("Storage", function() {
   this.encode = function(track) {
-    return encodeURIComponent(btoa(JSON.stringify(track)));
+    var radix36Track = '';
+    for(var i in track.channels) {
+      var binaryChannel = '';
+      for(var j = 0; j < 32; j++) {
+        console.log(i);
+        binaryChannel += (track.channels[i].length > j ? track.channels[i][j] : '0');
+      }
+      radix36Track += parseInt(binaryChannel, 2).toString(36)+',';
+    }
+    return radix36Track+track.tempo.toString(36);
   };
   this.decode = function(str) {
-    var e;
     try {
       return JSON.parse(atob(decodeURIComponent(str)));
-    } catch (_error) {
-      e = _error;
-      return null;
+    } catch (err) {
+      var track = str.split(',');
+      if(track.length != Object.keys(defaultTrack.channels).length+1) {
+        return null;
+      }
+      var decodedTrack = { tempo: parseInt(track[track.length-1], 36), beatCount: 8, channels: {} };
+      var n = 0;
+      for(var i in defaultTrack.channels) {
+        decodedTrack.channels[i] = pad(parseInt(track[n], 36).toString(2),32).split('').map(Number);
+        n++;
+        if(n > defaultTrack.channels.length) {
+          break;
+        }
+      }
+      return decodedTrack;
     }
   };
   return this;
@@ -136,7 +162,7 @@ drum.factory("Track", function(Storage) {
       trackObj = defaultTrack;
     }
     this.tempo = trackObj.tempo || 120;
-    this.beatCount = trackObj.beatCount || 4;
+    this.beatCount = trackObj.beatCount || 8;
     this.channels = trackObj.channels || {};
     return this;
   };
