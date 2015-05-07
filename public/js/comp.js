@@ -114,7 +114,6 @@ drum.service("Storage", function() {
     for(var i in track.channels) {
       var binaryChannel = '';
       for(var j = 0; j < 32; j++) {
-        console.log(i);
         binaryChannel += (track.channels[i].length > j ? track.channels[i][j] : '0');
       }
       radix36Track += parseInt(binaryChannel, 2).toString(36)+',';
